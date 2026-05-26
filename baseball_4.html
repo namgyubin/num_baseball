@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>숫자야구</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #f8f9fb;
+  --white:     #ffffff;
+  --surface:   #f2f4f6;
+  --border:    #e8eaed;
+  --blue:      #3182f6;
+  --blue-light:#ebf3ff;
+  --blue-dark: #1b64da;
+  --red:       #f04452;
+  --red-light: #fff0f2;
+  --green:     #00b493;
+  --green-light:#e5faf5;
+  --orange:    #ff6b35;
+  --text:      #191f28;
+  --text2:     #4e5968;
+  --text3:     #8b95a1;
+  --shadow-sm: 0 1px 4px rgba(0,0,0,.06);
+  --shadow:    0 4px 16px rgba(0,0,0,.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,.12);
+  --r:         14px;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Sans KR', -apple-system, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─── SCREEN MANAGER ─── */
+.screen { display: none; }
+.screen.active { display: flex; }
+
+/* ══════════════════════════════
+   SETUP SCREEN — two-column layout
+══════════════════════════════ */
+#screen-setup {
+  width: 100vw;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+.setup-layout {
+  display: grid;
+  grid-template-columns: 340px 380px;
+  gap: 24px;
+  max-width: 760px;
+  width: 100%;
+  align-items: start;
+}
+
+.setup-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.brand {
+  margin-bottom: 32px;
+}
+.brand-name {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+.brand-name span { color: var(--blue); }
+.brand-desc {
+  font-size: 13px;
+  color: var(--text3);
+  margin-top: 6px;
+  font-weight: 400;
+}
+
+/* secret input panel */
+.panel {
+  background: var(--white);
+  border-radius: var(--r);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+}
+.panel + .panel { margin-top: 12px; }
+
+.panel-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 16px;
+}
+
+.secret-dots {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 14px;
+  cursor: text;
+}
+.sdot {
+  width: 60px;
+  height: 68px;
+  background: var(--surface);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--blue);
+  transition: border-color .15s, background .15s, box-shadow .15s;
+}
+.sdot.active {
+  border-color: var(--blue);
+  background: var(--blue-light);
+  box-shadow: 0 0 0 3px rgba(49,130,246,.12);
+}
+.sdot.filled {
+  border-color: var(--border);
+  background: var(--white);
+  color: var(--text);
+}
+.sdot.filled .dot-char { color: var(--text); }
+
+.hidden-inp {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 1px; height: 1px;
+}
+
+.setup-hint {
+  font-size: 12px;
+  color: var(--text3);
+  text-align: center;
+  font-weight: 400;
+}
+.setup-err {
+  font-size: 12px;
+  color: var(--red);
+  text-align: center;
+  margin-top: 8px;
+  min-height: 16px;
+  font-weight: 500;
+}
+
+/* settings panel */
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+}
+.setting-row:last-child { border-bottom: none; padding-bottom: 0; }
+.setting-row:first-child { padding-top: 0; }
+.setting-info .s-title { font-size: 14px; font-weight: 500; color: var(--text); }
+.setting-info .s-sub   { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+/* toggle */
+.tgl {
+  width: 46px; height: 26px;
+  background: var(--border);
+  border-radius: 13px;
+  cursor: pointer;
+  border: none;
+  position: relative;
+  transition: background .2s;
+  flex-shrink: 0;
+}
+.tgl.on { background: var(--blue); }
+.tgl::after {
+  content: '';
+  position: absolute;
+  width: 20px; height: 20px;
+  background: white;
+  border-radius: 50%;
+  top: 3px; left: 3px;
+  transition: transform .2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,.15);
+}
+.tgl.on::after { transform: translateX(20px); }
+
+/* stepper */
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.step-btn {
+  width: 30px; height: 30px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text2);
+  transition: background .1s;
+  font-weight: 500;
+}
+.step-btn:hover { background: var(--border); }
+.step-val {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--blue);
+  width: 38px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* start button */
+.btn-start {
+  width: 100%;
+  padding: 16px;
+  background: var(--blue);
+  color: white;
+  border: none;
+  border-radius: var(--r);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s, transform .1s, box-shadow .15s;
+  margin-top: 12px;
+  box-shadow: 0 4px 12px rgba(49,130,246,.35);
+  letter-spacing: -0.2px;
+}
+.btn-start:hover  { background: var(--blue-dark); box-shadow: 0 6px 16px rgba(49,130,246,.4); }
+.btn-start:active { transform: scale(.98); }
+.btn-start:disabled {
+  background: var(--border);
+  color: var(--text3);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* setup right — rules */
+.setup-right {
+  background: var(--white);
+  border-radius: var(--r);
+  padding: 28px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+}
+.rules-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 20px;
+}
+.rule-item {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 18px;
+  align-items: flex-start;
+}
+.rule-item:last-child { margin-bottom: 0; }
+.rule-icon {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.rule-icon.blue   { background: var(--blue-light); }
+.rule-icon.red    { background: var(--red-light); }
+.rule-icon.green  { background: var(--green-light); }
+.rule-icon.orange { background: #fff4ef; }
+.rule-text-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.rule-text-desc  { font-size: 12px; color: var(--text3); line-height: 1.5; }
+
+.divider {
+  width: 100%;
+  height: 1px;
+  background: var(--border);
+  margin: 20px 0;
+}
+
+
+/* ══════════════════════════════
+   GAME SCREEN
+══════════════════════════════ */
+#screen-game {
+  width: 100vw;
+  min-height: 100vh;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 32px 24px 40px;
+}
+
+.game-wrap {
+  display: grid;
+  grid-template-columns: 420px 300px;
+  gap: 20px;
+  max-width: 760px;
+  width: 100%;
+  align-items: start;
+}
+
+.game-main { display: flex; flex-direction: column; gap: 16px; }
+.game-side  { display: flex; flex-direction: column; gap: 16px; }
+
+/* top bar */
+.game-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--white);
+  border-radius: var(--r);
+  padding: 16px 20px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+}
+.game-brand {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.3px;
+}
+.game-brand span { color: var(--blue); }
+
+.attempt-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--blue-light);
+  padding: 6px 14px;
+  border-radius: 99px;
+}
+.attempt-pill .try-label { font-size: 12px; color: var(--blue); font-weight: 500; }
+.attempt-pill .try-num   { font-size: 16px; font-weight: 800; color: var(--blue); font-variant-numeric: tabular-nums; }
+.attempt-pill .try-max   { font-size: 12px; color: var(--blue); opacity: .6; }
+
+/* input card */
+.input-card {
+  background: var(--white);
+  border-radius: var(--r);
+  padding: 22px 20px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+}
+.input-card-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text3);
+  letter-spacing: 0.5px;
+  margin-bottom: 14px;
+}
+
+.digit-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+  justify-content: center;
+}
+.dbox {
+  width: 72px;
+  height: 76px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s, background .15s;
+  caret-color: transparent;
+  -moz-appearance: textfield;
+}
+.dbox::-webkit-outer-spin-button,
+.dbox::-webkit-inner-spin-button { -webkit-appearance: none; }
+.dbox:focus {
+  border-color: var(--blue);
+  background: var(--blue-light);
+  box-shadow: 0 0 0 3px rgba(49,130,246,.12);
+}
+.dbox.filled {
+  border-color: var(--border);
+  background: var(--white);
+  color: var(--text);
+}
+
+.guess-err {
+  font-size: 12px;
+  color: var(--red);
+  min-height: 16px;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+.btn-submit {
+  width: 100%;
+  padding: 14px;
+  background: var(--blue);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s, box-shadow .15s, transform .1s;
+  box-shadow: 0 3px 10px rgba(49,130,246,.3);
+  letter-spacing: -0.2px;
+}
+.btn-submit:hover  { background: var(--blue-dark); }
+.btn-submit:active { transform: scale(.98); }
+.btn-submit:disabled {
+  background: var(--border);
+  color: var(--text3);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* limit warning */
+.limit-warn {
+  background: var(--red-light);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--red);
+  font-weight: 600;
+  text-align: center;
+  display: none;
+}
+.limit-warn.show { display: block; }
+
+/* history card */
+.history-card {
+  background: var(--white);
+  border-radius: var(--r);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+  flex: 1;
+}
+.history-head {
+  display: grid;
+  grid-template-columns: 28px 1fr 60px 60px;
+  gap: 6px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 10px;
+}
+.history-head span {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text3);
+  text-align: center;
+}
+.history-head span:nth-child(2) { text-align: left; }
+
+.history-body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.history-body::-webkit-scrollbar { width: 3px; }
+.history-body::-webkit-scrollbar-track { background: transparent; }
+.history-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.hrow {
+  display: grid;
+  grid-template-columns: 28px 1fr 60px 60px;
+  gap: 6px;
+  padding: 10px 8px;
+  background: var(--surface);
+  border-radius: 8px;
+  align-items: center;
+  animation: popIn .22s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes popIn {
+  from { opacity:0; transform: scale(.94) translateY(-4px); }
+  to   { opacity:1; transform: scale(1) translateY(0); }
+}
+.hrow-num {
+  font-size: 11px;
+  color: var(--text3);
+  text-align: center;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.hrow-guess {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--text);
+}
+.hrow-s, .hrow-b {
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  border-radius: 6px;
+  padding: 4px 2px;
+}
+.hrow-s { background: var(--red-light);   color: var(--red); }
+.hrow-b { background: var(--green-light); color: var(--green); }
+
+.empty-hist {
+  text-align: center;
+  padding: 32px 0;
+  color: var(--text3);
+  font-size: 13px;
+}
+
+/* side stats */
+.stats-card {
+  background: var(--white);
+  border-radius: var(--r);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+}
+.stats-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 14px;
+}
+.stat-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.stat-item:last-child { border-bottom: none; padding-bottom: 0; }
+.stat-item:first-child { padding-top: 0; }
+.stat-name { font-size: 13px; color: var(--text2); }
+.stat-num  { font-size: 16px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+
+/* tip card */
+.tip-card {
+  background: var(--blue-light);
+  border-radius: var(--r);
+  padding: 16px 18px;
+  border: 1px solid rgba(49,130,246,.15);
+}
+.tip-title { font-size: 12px; font-weight: 700; color: var(--blue); margin-bottom: 10px; }
+.tip-item  { font-size: 12px; color: var(--blue); opacity: .8; margin-bottom: 6px; display: flex; gap: 6px; line-height: 1.5; }
+.tip-item:last-child { margin-bottom: 0; }
+.tip-dot   { flex-shrink: 0; margin-top: 1px; }
+
+/* ══════════════════════════════
+   RESULT SCREEN
+══════════════════════════════ */
+#screen-result {
+  width: 100vw;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+.result-card {
+  background: var(--white);
+  border-radius: 20px;
+  padding: 48px 48px 40px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+  animation: resultIn .4s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes resultIn {
+  from { opacity:0; transform: scale(.88) translateY(20px); }
+  to   { opacity:1; transform: scale(1) translateY(0); }
+}
+.result-emoji { font-size: 56px; margin-bottom: 16px; }
+.result-tag {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.result-tag.win  { background: var(--blue-light); color: var(--blue); }
+.result-tag.lose { background: var(--red-light);  color: var(--red); }
+.result-heading {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.5px;
+  margin-bottom: 6px;
+}
+.result-sub {
+  font-size: 14px;
+  color: var(--text3);
+  margin-bottom: 28px;
+}
+.answer-display {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 28px;
+}
+.answer-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+.answer-nums {
+  font-size: 38px;
+  font-weight: 800;
+  color: var(--blue);
+  letter-spacing: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.result-stats-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.r-stat {
+  flex: 1;
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 14px 10px;
+  text-align: center;
+}
+.r-stat-val   { font-size: 24px; font-weight: 800; color: var(--text); }
+.r-stat-label { font-size: 11px; color: var(--text3); margin-top: 3px; font-weight: 500; }
+
+.result-btns { display: flex; flex-direction: column; gap: 8px; }
+.btn-new {
+  padding: 14px;
+  background: var(--blue);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s;
+  box-shadow: 0 3px 10px rgba(49,130,246,.3);
+}
+.btn-new:hover { background: var(--blue-dark); }
+.btn-ghost {
+  padding: 13px;
+  background: transparent;
+  color: var(--text2);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.btn-ghost:hover { border-color: var(--text3); background: var(--surface); }
+
+/* shake */
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%      { transform: translateX(-7px); }
+  60%      { transform: translateX(7px); }
+  80%      { transform: translateX(-3px); }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ SETUP ══ -->
+<div id="screen-setup" class="screen active">
+  <div class="setup-layout">
+
+    <div class="setup-left">
+      <div class="brand">
+        <div class="brand-name">숫자<span>야구</span></div>
+        <div class="brand-desc">4자리 숫자를 맞춰보세요</div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-label">출제자 — 정답 입력</div>
+        <div class="secret-dots" id="secretDots">
+          <div class="sdot active" id="sd0"><span class="dot-char">·</span></div>
+          <div class="sdot" id="sd1"><span class="dot-char">·</span></div>
+          <div class="sdot" id="sd2"><span class="dot-char">·</span></div>
+          <div class="sdot" id="sd3"><span class="dot-char">·</span></div>
+          <input type="tel" class="hidden-inp" id="secretInp" maxlength="4" inputmode="numeric" autocomplete="off">
+        </div>
+        <div class="setup-hint">각 자리 서로 다른 숫자 · 첫째 자리 0 불가</div>
+        <div class="setup-err" id="setupErr"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-label">게임 설정</div>
+
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="s-title">시도 횟수 제한</div>
+            <div class="s-sub">끄면 무제한</div>
+          </div>
+          <button class="tgl" id="limitTgl" onclick="toggleLimit()"></button>
+        </div>
+
+        <div class="setting-row" id="limitRow" style="opacity:.35;pointer-events:none">
+          <div class="setting-info">
+            <div class="s-title">최대 횟수</div>
+          </div>
+          <div class="stepper">
+            <button class="step-btn" onclick="changeLimit(-1)">−</button>
+            <span class="step-val" id="limitVal">10</span>
+            <button class="step-btn" onclick="changeLimit(+1)">+</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-start" id="startBtn" onclick="startGame()" disabled>게임 시작</button>
+    </div>
+
+    <div class="setup-right">
+      <div class="rules-title">게임 방법</div>
+
+      <div class="rule-item">
+        <div class="rule-icon blue">🎯</div>
+        <div>
+          <div class="rule-text-title">4자리 숫자를 맞춰요</div>
+          <div class="rule-text-desc">출제자가 입력한 4자리 숫자를 단서를 통해 추리합니다.</div>
+        </div>
+      </div>
+
+      <div class="rule-item">
+        <div class="rule-icon red">🔴</div>
+        <div>
+          <div class="rule-text-title">스트라이크</div>
+          <div class="rule-text-desc">숫자와 위치가 모두 맞으면 스트라이크. 4S면 정답!</div>
+        </div>
+      </div>
+
+      <div class="rule-item">
+        <div class="rule-icon green">🟢</div>
+        <div>
+          <div class="rule-text-title">볼</div>
+          <div class="rule-text-desc">숫자는 맞지만 위치가 틀리면 볼.</div>
+        </div>
+      </div>
+
+      <div class="rule-item">
+        <div class="rule-icon orange">⚾</div>
+        <div>
+          <div class="rule-text-title">아웃</div>
+          <div class="rule-text-desc">숫자가 하나도 없으면 아웃 (0S 0B).</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div style="background:var(--surface);border-radius:10px;padding:14px 16px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;">예시</div>
+        <div style="font-size:12px;color:var(--text3);line-height:1.8;">
+          정답: <b style="color:var(--text)">1 2 3 4</b><br>
+          입력: 1 5 3 6 → <b style="color:var(--red)">2S</b> <b style="color:var(--green)">0B</b><br>
+          입력: 2 1 6 7 → <b style="color:var(--red)">0S</b> <b style="color:var(--green)">2B</b>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ GAME ══ -->
+<div id="screen-game" class="screen">
+  <div class="game-wrap">
+
+    <div class="game-main">
+      <div class="game-topbar">
+        <div class="game-brand">숫자<span>야구</span></div>
+        <div class="attempt-pill">
+          <span class="try-label">시도</span>
+          <span class="try-num" id="tryNum">0</span>
+          <span class="try-max" id="tryMax"></span>
+        </div>
+      </div>
+
+      <div class="input-card">
+        <div class="input-card-label">숫자 입력</div>
+        <div class="digit-row">
+          <input class="dbox" id="d0" type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input class="dbox" id="d1" type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input class="dbox" id="d2" type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input class="dbox" id="d3" type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        </div>
+        <div class="guess-err" id="guessErr"></div>
+        <button class="btn-submit" id="submitBtn" onclick="submitGuess()" disabled>확인 (Enter)</button>
+      </div>
+
+      <div class="limit-warn" id="limitWarn"></div>
+
+      <div class="history-card">
+        <div class="history-head">
+          <span>#</span><span>입력</span><span>스트라이크</span><span>볼</span>
+        </div>
+        <div class="history-body" id="histBody">
+          <div class="empty-hist">아직 입력한 숫자가 없어요</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="game-side">
+      <div class="stats-card">
+        <div class="stats-title">현황</div>
+        <div class="stat-item">
+          <span class="stat-name">총 시도</span>
+          <span class="stat-num" id="statTotal">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-name">남은 기회</span>
+          <span class="stat-num" id="statLeft">무제한</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-name">최고 스트라이크</span>
+          <span class="stat-num" id="statBestS">—</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-name">최고 볼</span>
+          <span class="stat-num" id="statBestB">—</span>
+        </div>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-title">💡 조작 방법</div>
+        <div class="tip-item"><span class="tip-dot">›</span> 숫자 입력 후 자동으로 다음 칸</div>
+        <div class="tip-item"><span class="tip-dot">›</span> Backspace로 이전 칸 이동</div>
+        <div class="tip-item"><span class="tip-dot">›</span> Enter로 바로 확인</div>
+        <div class="tip-item"><span class="tip-dot">›</span> 어떤 숫자 조합이든 자유롭게 입력 가능</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ RESULT ══ -->
+<div id="screen-result" class="screen">
+  <div class="result-card">
+    <div class="result-emoji" id="resEmoji"></div>
+    <div class="result-tag" id="resTag"></div>
+    <div class="result-heading" id="resHeading"></div>
+    <div class="result-sub" id="resSub"></div>
+
+    <div class="answer-display">
+      <div class="answer-label">정답</div>
+      <div class="answer-nums" id="resAnswer"></div>
+    </div>
+
+    <div class="result-stats-row">
+      <div class="r-stat">
+        <div class="r-stat-val" id="resTries">0</div>
+        <div class="r-stat-label">시도 횟수</div>
+      </div>
+      <div class="r-stat">
+        <div class="r-stat-val" id="resMaxS">—</div>
+        <div class="r-stat-label">최고 스트라이크</div>
+      </div>
+    </div>
+
+    <div class="result-btns">
+      <button class="btn-new" onclick="goSetupSame()">같은 설정으로 다시</button>
+      <button class="btn-ghost" onclick="goSetup()">새 문제 출제하기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── state
+let secret = '', limitOn = false, limitN = 10;
+let attempts = 0, bestS = -1, bestB = -1;
+let savedSecret = '';
+
+// ── secret input
+const secretInp = document.getElementById('secretInp');
+document.getElementById('secretDots').addEventListener('click', () => secretInp.focus());
+
+secretInp.addEventListener('focus', () => updateDots(secretInp.value));
+secretInp.addEventListener('blur',  () => updateDots(secretInp.value));
+secretInp.addEventListener('input', e => {
+  e.target.value = e.target.value.replace(/\D/g,'');
+  updateDots(e.target.value);
+  checkSecret(e.target.value);
+});
+secretInp.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !document.getElementById('startBtn').disabled) startGame();
+});
+
+function updateDots(v) {
+  const focused = document.activeElement === secretInp;
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById('sd'+i);
+    d.classList.remove('active','filled');
+    if (i < v.length) {
+      d.innerHTML = '<span class="dot-char">●</span>';
+      d.classList.add('filled');
+    } else if (i === v.length && focused) {
+      d.innerHTML = '<span class="dot-char">·</span>';
+      d.classList.add('active');
+    } else {
+      d.innerHTML = '<span class="dot-char">·</span>';
+    }
+  }
+}
+
+function checkSecret(v) {
+  const err = document.getElementById('setupErr');
+  const btn = document.getElementById('startBtn');
+  if (v.length < 4) {
+    err.textContent = v.length ? `${v.length}/4 입력됨` : '';
+    btn.disabled = true; return;
+  }
+  if (v[0] === '0') { err.textContent = '첫째 자리는 0이 될 수 없어요'; btn.disabled = true; return; }
+  if (new Set(v).size < 4) { err.textContent = '각 자리는 서로 다른 숫자여야 해요'; btn.disabled = true; return; }
+  err.textContent = ''; btn.disabled = false; secret = v;
+}
+
+// ── settings
+function toggleLimit() {
+  limitOn = !limitOn;
+  document.getElementById('limitTgl').classList.toggle('on', limitOn);
+  const row = document.getElementById('limitRow');
+  row.style.opacity = limitOn ? '1' : '.35';
+  row.style.pointerEvents = limitOn ? 'auto' : 'none';
+}
+function changeLimit(d) {
+  limitN = Math.max(1, Math.min(99, limitN + d));
+  document.getElementById('limitVal').textContent = limitN;
+}
+
+// ── start
+function startGame() {
+  if (!secret) return;
+  savedSecret = secret;
+  attempts = 0; bestS = -1; bestB = -1;
+  document.getElementById('tryNum').textContent = '0';
+  document.getElementById('tryMax').textContent = limitOn ? '/ ' + limitN : '무제한';
+  document.getElementById('statTotal').textContent = '0';
+  document.getElementById('statLeft').textContent = limitOn ? String(limitN) : '무제한';
+  document.getElementById('statBestS').textContent = '—';
+  document.getElementById('statBestB').textContent = '—';
+  document.getElementById('histBody').innerHTML = '<div class="empty-hist">아직 입력한 숫자가 없어요</div>';
+  document.getElementById('limitWarn').className = 'limit-warn';
+  clearD(); show('screen-game');
+  setTimeout(() => document.getElementById('d0').focus(), 80);
+}
+
+// ── digit boxes
+const dbs = [0,1,2,3].map(i => document.getElementById('d'+i));
+
+dbs.forEach((b,i) => {
+  b.addEventListener('input', e => {
+    const v = e.target.value.replace(/\D/g,'').slice(-1);
+    e.target.value = v;
+    b.classList.toggle('filled', !!v);
+    if (v && i < 3) dbs[i+1].focus();
+    updateSub();
+  });
+  b.addEventListener('keydown', e => {
+    if (e.key === 'Backspace' && !e.target.value && i > 0) {
+      dbs[i-1].value = ''; dbs[i-1].classList.remove('filled'); dbs[i-1].focus(); updateSub();
+    }
+    if (e.key === 'Enter') submitGuess();
+  });
+  b.addEventListener('paste', e => {
+    e.preventDefault();
+    const t = (e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'');
+    for (let j=0;j<4&&j<t.length;j++){dbs[j].value=t[j];dbs[j].classList.add('filled');}
+    dbs[Math.min(t.length,3)].focus(); updateSub();
+  });
+});
+
+function updateSub() {
+  document.getElementById('submitBtn').disabled = !dbs.every(b=>b.value);
+}
+function clearD() {
+  dbs.forEach(b=>{b.value='';b.classList.remove('filled');});
+  document.getElementById('submitBtn').disabled = true;
+  document.getElementById('guessErr').textContent = '';
+}
+
+// ── submit
+function submitGuess() {
+  const g = dbs.map(b=>b.value).join('');
+  if (g.length < 4) return;
+  const errEl = document.getElementById('guessErr');
+
+  errEl.textContent = '';
+
+  attempts++;
+  const {s, b} = calc(savedSecret, g);
+  if (s > bestS) bestS = s;
+  if (b > bestB) bestB = b;
+
+  // update stats
+  document.getElementById('tryNum').textContent = attempts;
+  document.getElementById('statTotal').textContent = attempts;
+  if (limitOn) {
+    const left = limitN - attempts;
+    document.getElementById('statLeft').textContent = Math.max(0, left);
+    const warn = document.getElementById('limitWarn');
+    if (left <= 3 && left > 0) {
+      warn.className = 'limit-warn show';
+      warn.textContent = `⚠ 남은 기회 ${left}번`;
+    } else if (left <= 0) {
+      warn.className = 'limit-warn show';
+      warn.textContent = '마지막 기회였습니다';
+    }
+  }
+  document.getElementById('statBestS').textContent = bestS >= 0 ? bestS+'S' : '—';
+  document.getElementById('statBestB').textContent = bestB >= 0 ? bestB+'B' : '—';
+
+  // prepend row
+  const body = document.getElementById('histBody');
+  const empties = body.querySelectorAll('.empty-hist');
+  empties.forEach(e=>e.remove());
+  const row = document.createElement('div');
+  row.className = 'hrow';
+  row.innerHTML = `
+    <span class="hrow-num">${attempts}</span>
+    <span class="hrow-guess">${g.split('').join(' ')}</span>
+    <span class="hrow-s">${s}S</span>
+    <span class="hrow-b">${b}B</span>
+  `;
+  body.insertBefore(row, body.firstChild);
+
+  if (s === 4) { setTimeout(()=>showResult(true), 350); return; }
+  if (limitOn && attempts >= limitN) { setTimeout(()=>showResult(false), 350); return; }
+
+  clearD();
+  dbs[0].focus();
+}
+
+function calc(sec, g) {
+  let s=0, b=0;
+  const secLeft=[], gLeft=[];
+  for(let i=0;i<4;i++){
+    if(g[i]===sec[i]) s++;
+    else { secLeft.push(sec[i]); gLeft.push(g[i]); }
+  }
+  const freq={};
+  for(const c of secLeft) freq[c]=(freq[c]||0)+1;
+  for(const c of gLeft){ if(freq[c]>0){ b++; freq[c]--; } }
+  return {s,b};
+}
+
+function shake() {
+  const row = document.querySelector('.digit-row');
+  row.style.animation='none'; row.offsetHeight;
+  row.style.animation='shake .3s ease';
+}
+
+// ── result
+function showResult(win) {
+  show('screen-result');
+  document.getElementById('resEmoji').textContent   = win ? '🏆' : '😢';
+  document.getElementById('resTag').textContent     = win ? 'SUCCESS' : 'GAME OVER';
+  document.getElementById('resTag').className       = 'result-tag ' + (win?'win':'lose');
+  document.getElementById('resHeading').textContent = win ? '정답입니다!' : '아쉽네요';
+  document.getElementById('resSub').textContent     = win
+    ? `${attempts}번 만에 맞혔어요!`
+    : `${limitN}번 안에 맞추지 못했어요.`;
+  document.getElementById('resAnswer').textContent  = savedSecret.split('').join(' ');
+  document.getElementById('resTries').textContent   = attempts;
+  document.getElementById('resMaxS').textContent    = bestS >= 0 ? bestS+'S' : '—';
+}
+
+function goSetup() {
+  secret = '';
+  document.getElementById('secretInp').value = '';
+  updateDots('');
+  document.getElementById('setupErr').textContent = '';
+  document.getElementById('startBtn').disabled = true;
+  show('screen-setup');
+  setTimeout(()=>document.getElementById('secretInp').focus(), 100);
+}
+
+function goSetupSame() {
+  secret = ''; savedSecret = '';
+  document.getElementById('secretInp').value = '';
+  updateDots('');
+  document.getElementById('setupErr').textContent = '';
+  document.getElementById('startBtn').disabled = true;
+  show('screen-setup');
+  setTimeout(()=>document.getElementById('secretInp').focus(), 100);
+}
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+setTimeout(()=>document.getElementById('secretInp').focus(), 200);
+</script>
+</body>
+</html>
